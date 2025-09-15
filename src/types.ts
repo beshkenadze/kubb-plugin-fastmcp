@@ -1,0 +1,54 @@
+import type { Group, Output, PluginFactoryOptions, ResolveNameParams } from '@kubb/core';
+
+import type { Oas, contentType } from '@kubb/oas';
+import type { PluginClient } from '@kubb/plugin-client';
+import type { Exclude, Generator, Include, Override, ResolvePathOptions } from '@kubb/plugin-oas';
+
+export type Options = {
+  /**
+   * Specify the export location for the files and define the behavior of the output
+   * @default { path: 'fastmcp', barrelType: 'named' }
+   */
+  output?: Output<Oas>
+  /**
+   * Define which contentType should be used.
+   * By default, the first JSON valid mediaType will be used
+   */
+  contentType?: contentType
+  client?: Pick<PluginClient['options'], 'dataReturnType' | 'importPath' | 'baseURL'>
+
+  /**
+   * Group the fastmcp requests based on the provided name.
+   */
+  group?: Group
+  /**
+   * Array containing exclude parameters to exclude/skip tags/operations/methods/paths.
+   */
+  exclude?: Array<Exclude>
+  /**
+   * Array containing include parameters to include tags/operations/methods/paths.
+   */
+  include?: Array<Include>
+  /**
+   * Array containing override parameters to override `options` based on tags/operations/methods/paths.
+   */
+  override?: Array<Override<ResolvedOptions>>
+  transformers?: {
+    /**
+     * Customize the names based on the type that is provided by the plugin.
+     */
+    name?: (name: ResolveNameParams['name'], type?: ResolveNameParams['type']) => string
+  }
+  /**
+   * Define some generators next to the FastMCP generators.
+   */
+  generators?: Array<Generator<PluginFastMCP>>
+}
+
+type ResolvedOptions = {
+  output: Output<Oas>
+  group: Options['group']
+  client: Required<Omit<NonNullable<PluginFastMCP['options']['client']>, 'baseURL'>> & { baseURL?: string }
+}
+
+export type PluginFastMCP = PluginFactoryOptions<'plugin-fastmcp', Options, ResolvedOptions, never, ResolvePathOptions>
