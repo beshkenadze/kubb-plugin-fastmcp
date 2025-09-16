@@ -65,7 +65,8 @@
     "release": "pnpm publish --no-git-check",
     "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
     "start": "tsdown --watch",
-    "test": "vitest --passWithNoTests",
+    "test": "bun run generate && bun test test/server.test.ts",
+    "test:server": "bun test test/server.test.ts",
     "test:integration": "bun test test/integration",
     "test:all": "bun test && bun run generate:test && bun run test:integration",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
