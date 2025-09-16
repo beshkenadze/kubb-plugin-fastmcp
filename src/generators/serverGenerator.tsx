@@ -6,6 +6,7 @@ import { pluginZodName } from '@kubb/plugin-zod';
 import { File, useApp } from '@kubb/react';
 import { Server } from '../components/Server';
 import type { PluginFastMCP } from '../types';
+import { resolveImportPath } from '../utils/pathResolver';
 
 export const serverGenerator = createReactGenerator<PluginFastMCP>({
   name: 'operations',
@@ -47,8 +48,10 @@ export const serverGenerator = createReactGenerator<PluginFastMCP>({
     })
 
     const imports = operationsMapped.flatMap(({ fastmcp, zod }) => {
+      const resolvedFastmcpPath = resolveImportPath(fastmcp.file.path, plugin.options, file.path)
+      const resolvedZodPath = resolveImportPath(zod.file.path, plugin.options, file.path)
       return [
-        <File.Import key={fastmcp.name} name={[fastmcp.name]} root={file.path} path={fastmcp.file.path} />,
+        <File.Import key={fastmcp.name} name={[fastmcp.name]} root={file.path} path={resolvedFastmcpPath} />,
         <File.Import
           key={zod.name}
           name={[
@@ -58,10 +61,12 @@ export const serverGenerator = createReactGenerator<PluginFastMCP>({
             zod.schemas.headerParams?.name,
           ].filter((name): name is string => Boolean(name))}
           root={file.path}
-          path={zod.file.path}
+          path={resolvedZodPath}
         />,
       ]
     })
+
+    const resolvedFastmcpPath = resolveImportPath('fastmcp', plugin.options, file.path)
 
     return (
       <>
@@ -72,8 +77,7 @@ export const serverGenerator = createReactGenerator<PluginFastMCP>({
           banner={getBanner({ oas, output: options.output, config: pluginManager.config })}
           footer={getFooter({ oas, output: options.output })}
         >
-          <File.Import name={['FastMCPServer']} path={'fastmcp/server'} />
-          <File.Import name={['HttpStreamTransport']} path={'fastmcp/server/transport'} />
+          <File.Import name={['FastMCP']} path={resolvedFastmcpPath} />
 
           {imports}
           <Server name={name} serverName={oas.api.info?.title} serverVersion={oas.getVersion()} operations={operationsMapped} />

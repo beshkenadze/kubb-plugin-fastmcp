@@ -9,7 +9,7 @@ export default defineConfig({
     path: "./petstore.yaml",
   },
   output: {
-    path: "./test/generated",
+    path: "./src/gen",
   },
   plugins: [
     pluginOas(),

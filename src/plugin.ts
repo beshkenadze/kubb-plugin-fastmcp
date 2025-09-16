@@ -1,5 +1,7 @@
 import path from 'node:path';
 
+import { createPathsMatcher, getTsconfig } from 'get-tsconfig';
+
 import { FileManager, type Group, PluginManager, createPlugin } from '@kubb/core';
 import { camelCase } from '@kubb/core/transformers';
 import { OperationGenerator, pluginOasName } from '@kubb/plugin-oas';
@@ -8,8 +10,8 @@ import { pluginTsName } from '@kubb/plugin-ts';
 import type { Plugin } from '@kubb/core';
 import type { PluginOas as OasPluginOptions } from '@kubb/plugin-oas';
 import { pluginZodName } from '@kubb/plugin-zod';
-import { fastmcpGenerator, serverGenerator } from './generators';
-import type { PluginFastMCP } from './types.ts';
+import { clientGenerator, fastmcpGenerator, serverGenerator } from './generators';
+import type { ImportStyle, PluginFastMCP, ResolvedOptions } from './types';
 
 export const pluginFastMCPName = 'plugin-fastmcp' satisfies PluginFastMCP['name']
 
@@ -21,22 +23,29 @@ export const pluginFastMCP = createPlugin<PluginFastMCP>((options) => {
     include,
     override = [],
     transformers = {},
-    generators = [fastmcpGenerator, serverGenerator].filter(Boolean),
+    generators = [clientGenerator, fastmcpGenerator, serverGenerator].filter(Boolean),
     contentType,
     client,
+    importStyle = 'auto',
   } = options
+
+  // Initial resolved options with type assertion to match expected structure
+  const resolvedOptions = {
+    output,
+    group,
+    client: {
+      importPath: client?.importPath ?? '@kubb/plugin-client/clients/axios',
+      dataReturnType: client?.dataReturnType ?? 'data',
+      ...client,
+    },
+    importStyle,
+    tsconfig: null as ResolvedOptions['tsconfig'],
+    pathsMatcher: null as ResolvedOptions['pathsMatcher'],
+  } as ResolvedOptions
 
   return {
     name: pluginFastMCPName,
-    options: {
-      output,
-      group,
-      client: {
-        importPath: client?.importPath ?? 'fastmcp/client',
-        dataReturnType: client?.dataReturnType ?? 'data',
-        ...client,
-      },
-    },
+    options: resolvedOptions,
     pre: [pluginOasName, pluginTsName, pluginZodName].filter(Boolean),
     resolvePath(baseName, pathMode, options) {
       const root = path.resolve(this.config.root, this.config.output.path)
@@ -88,9 +97,48 @@ export const pluginFastMCP = createPlugin<PluginFastMCP>((options) => {
       const root = path.resolve(this.config.root, this.config.output.path)
       const mode = FileManager.getMode(path.resolve(root, output.path))
 
-      const operationGenerator = new OperationGenerator(this.plugin.options, {
+      // Load tsconfig and detect import style if 'auto'
+      const tsconfig = getTsconfig(this.config.root)
+      let resolvedImportStyle: ImportStyle = importStyle
+      let pathsMatcher: ((request: string) => string[] | undefined) | null = null
+
+      if (importStyle === 'auto' && tsconfig?.config.compilerOptions) {
+        const { module, moduleResolution, allowImportingTsExtensions } = tsconfig.config.compilerOptions
+
+        if ((moduleResolution === 'node16' || moduleResolution === 'nodenext') && (module === 'node16' || module === 'nodenext')) {
+          resolvedImportStyle = 'needs-js-extension'
+        } else if (allowImportingTsExtensions) {
+          resolvedImportStyle = 'ts-extensions-allowed'
+        } else {
+          resolvedImportStyle = 'no-extension-ok'
+        }
+      }
+
+      if (tsconfig) {
+        pathsMatcher = createPathsMatcher(tsconfig)
+      }
+
+      // Update resolved options
+      Object.assign(this.plugin.options, {
+        importStyle: resolvedImportStyle,
+        tsconfig,
+        pathsMatcher,
+      })
+
+      const operationGenerator = new OperationGenerator({
+        output,
+        group,
+        exclude,
+        include,
+        override,
+        contentType,
+        client: resolvedOptions.client,
+        importStyle: resolvedOptions.importStyle,
+        tsconfig: resolvedOptions.tsconfig,
+        pathsMatcher: resolvedOptions.pathsMatcher,
+      } as any, {
         oas,
-        pluginManager: this.pluginManager,
+        pluginManager: this.pluginManager as any,
         plugin: this.plugin,
         contentType,
         exclude,
@@ -99,7 +147,7 @@ export const pluginFastMCP = createPlugin<PluginFastMCP>((options) => {
         mode,
       })
 
-      const files = await operationGenerator.build(...generators)
+      const files = await operationGenerator.build(...generators as any)
       await this.addFile(...files)
 
       const barrelFiles = await this.fileManager.getBarrelFiles({

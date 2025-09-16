@@ -115,6 +115,141 @@ export const addPetHandler = async (params: AddPetRequest): Promise<CallToolResu
 }
 ```
 
+## tsconfig.json Integration
+
+The plugin integrates with your project's `tsconfig.json` to provide intelligent import path resolution and extension handling for generated code. This ensures compatibility with your TypeScript configuration and bundler setup.
+
+### Features
+
+- **Path Alias Resolution**: Automatically resolves `@/*` and other path mappings from `compilerOptions.paths`
+- **Import Style Detection**: Detects whether to append `.js` or `.ts` extensions based on your module system (ESM vs CJS)
+- **Dynamic Extension Handling**: Generated imports adapt to your configuration (bundler mode, Node.js ESM, etc.)
+- **Fallback Detection**: Uses file existence checks when automatic detection is ambiguous
+
+### How It Works
+
+1. **tsconfig Loading**: The plugin uses [get-tsconfig](https://github.com/privatenumber/get-tsconfig) to load and parse your `tsconfig.json`
+2. **Import Style Detection**: Based on your `compilerOptions`:
+   - `moduleResolution: "node16" | "nodenext"` + `module: "node16" | "nodenext"` → `'needs-js-extension'` (ESM requires `.js` extensions)
+   - `allowImportingTsExtensions: true` → `'ts-extensions-allowed'` (allows `.ts` imports for bundlers)
+   - Default bundler mode → `'no-extension-ok'` (extensions optional for Webpack/Vite/esbuild)
+3. **Path Resolution**: Uses `createPathsMatcher` to resolve aliases like `@utils` → `./src/utils`
+4. **Extension Appending**: The `resolveImportPath` utility appends appropriate extensions based on detected style
+5. **Plugin Option Override**: You can manually set `importStyle` to override automatic detection
+
+### Example tsconfig.json Configurations
+
+#### 1. ESM with Extensions (Node.js 16+)
+
+```json
+{
+  "compilerOptions": {
+    "module": "node16",
+    "moduleResolution": "node16",
+    "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+Generated imports:
+```typescript
+// @utils → ./src/utils.js (needs-js-extension)
+import { helper } from '@utils';
+// ./local → ./local.js
+import { localFn } from './local';
+```
+
+#### 2. Bundler Mode with TS Extensions
+
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["./src/components/*"]
+    }
+  }
+}
+```
+
+Generated imports:
+```typescript
+// @components/Button → ./src/components/Button.ts (ts-extensions-allowed)
+import { Button } from '@components/Button';
+// ./utils → ./utils.ts
+import { utilFn } from './utils';
+// ./Componentx → ./Componentx.tsx (React JSX detection)
+import { Componentx } from './Componentx';
+```
+
+#### 3. CommonJS / Legacy Mode
+
+```json
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "baseUrl": "."
+  }
+}
+```
+
+Generated imports:
+```typescript
+// No extensions appended (no-extension-ok)
+import { helper } from '@utils';
+import { localFn } from './local';
+```
+
+### Plugin Configuration
+
+You can override automatic detection with the `importStyle` option:
+
+```typescript
+pluginFastMCP({
+  importStyle: 'ts-extensions-allowed', // Force .ts extensions
+  // or
+  importStyle: 'no-extension-ok', // No extensions for bundler
+  output: { path: './fastmcp' },
+})
+```
+
+Available values:
+- `'auto'` (default): Detect from tsconfig.json
+- `'needs-js-extension'`: Always append `.js` (Node.js ESM)
+- `'ts-extensions-allowed'`: Append `.ts`/`.tsx` (bundler with TS extensions)
+- `'no-extension-ok'`: No extensions (CommonJS/bundler)
+
+### Testing the Integration
+
+The plugin includes tests for different tsconfig configurations. Run tests to verify:
+
+```bash
+bun test
+```
+
+Tests cover:
+- Alias resolution with paths mapping
+- Extension appending for ESM vs CJS
+- React JSX (.tsx) detection
+- File existence fallback
+
+### Troubleshooting
+
+- **Path aliases not resolving**: Ensure `baseUrl` and `paths` are defined in compilerOptions
+- **Extension errors at runtime**: Check your bundler configuration matches the detected importStyle
+- **No tsconfig.json found**: The plugin falls back to relative paths without extensions
+- **Testing with path mappings**: Use `vite-tsconfig-paths` in your Vitest config for test resolution
+
+For more details, see the [get-tsconfig documentation](https://github.com/privatenumber/get-tsconfig) and [TypeScript module resolution docs](https://www.typescriptlang.org/docs/handbook/module-resolution.html).
+
 ## Configuration Options
 
 ### Basic Configuration

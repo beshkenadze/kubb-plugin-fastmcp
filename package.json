@@ -50,17 +50,24 @@
     "src",
     "dist",
     "!/**/**.test.**",
-    "!/**/__tests__/**"
+    "!/**/__tests__/**",
+    "!test/"
   ],
   "scripts": {
     "build": "tsdown",
     "clean": "npx rimraf ./dist",
+    "clean:test": "rm -rf test/generated",
+    "generate": "bun x kubb generate",
+    "generate:test": "bun x kubb generate --config kubb.config.test.ts",
     "lint": "bun biome lint .",
     "lint:fix": "bun biome lint --fix --unsafe .",
+    "pretest:integration": "bun run clean:test",
     "release": "pnpm publish --no-git-check",
     "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
     "start": "tsdown --watch",
     "test": "vitest --passWithNoTests",
+    "test:integration": "bun test test/integration",
+    "test:all": "bun test && bun run generate:test && bun run test:integration",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -71,18 +78,20 @@
     "@kubb/plugin-ts": "^3.18.3",
     "@kubb/plugin-zod": "^3.18.3",
     "@kubb/react": "^3.18.3",
-    "fastmcp": "^3.17.0"
+    "axios": "^1.7.0",
+    "fastmcp": "^3.17.0",
+    "get-tsconfig": "^4.10.1"
   },
   "devDependencies": {
     "@kubb/config-ts": "^3.18.3",
-    "@types/react": "^18.2.0",
-    "react": "^18.2.0",
-    "tsdown": "^0.14.0",
+    "@types/react": "^19.1.13",
+    "react": "^19.1.1",
+    "tsdown": "^0.15.1",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0",
-    "@types/node": "^20.0.0",
-    "@vitejs/plugin-react": "^4.2.1",
-    "jsdom": "^24.0.0"
+    "vitest": "^3.2.4",
+    "@types/node": "^24.5.0",
+    "@vitejs/plugin-react": "^5.0.2",
+    "jsdom": "^27.0.0"
   },
   "peerDependencies": {
     "@kubb/react": "^3.0.0",

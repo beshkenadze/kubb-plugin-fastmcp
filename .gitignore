@@ -35,3 +35,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Auto-generated files
 src/gen/*
+
+# Test generated files
+test/generated/
+test/temp-gen/

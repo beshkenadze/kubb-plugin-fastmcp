@@ -1,3 +1,4 @@
+export { clientGenerator } from './clientGenerator';
 export { fastmcpGenerator } from './fastmcpGenerator';
 export { serverGenerator } from './serverGenerator';
 

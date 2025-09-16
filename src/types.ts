@@ -1,10 +1,19 @@
 import type { Group, Output, PluginFactoryOptions, ResolveNameParams } from '@kubb/core';
 
+export type ImportStyle = 'auto' | 'needs-js-extension' | 'no-extension-ok' | 'ts-extensions-allowed';
+
 import type { Oas, contentType } from '@kubb/oas';
 import type { PluginClient } from '@kubb/plugin-client';
 import type { Exclude, Generator, Include, Override, ResolvePathOptions } from '@kubb/plugin-oas';
 
+
 export type Options = {
+  /**
+   * Import style for generated code, determines whether to append .js/.ts extensions to imports.
+   * 'auto' detects from tsconfig.json (module, moduleResolution, allowImportingTsExtensions).
+   * @default 'auto'
+   */
+  importStyle?: ImportStyle
   /**
    * Specify the export location for the files and define the behavior of the output
    * @default { path: 'fastmcp', barrelType: 'named' }
@@ -45,7 +54,10 @@ export type Options = {
   generators?: Array<Generator<PluginFastMCP>>
 }
 
-type ResolvedOptions = {
+export type ResolvedOptions = {
+  importStyle: ImportStyle
+  tsconfig: import('get-tsconfig').TsConfigJsonResolved | null
+  pathsMatcher: ((request: string) => string[] | undefined) | null
   output: Output<Oas>
   group: Options['group']
   client: Required<Omit<NonNullable<PluginFastMCP['options']['client']>, 'baseURL'>> & { baseURL?: string }

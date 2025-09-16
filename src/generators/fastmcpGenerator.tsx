@@ -5,13 +5,13 @@ import { getBanner, getFooter } from '@kubb/plugin-oas/utils';
 import { pluginTsName } from '@kubb/plugin-ts';
 import { File, useApp } from '@kubb/react';
 import type { PluginFastMCP } from '../types';
+import { resolveImportPath } from '../utils/pathResolver';
 
 export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
   name: 'fastmcp',
   Operation({ operation }) {
-    const {
-      plugin: { options },
-    } = useApp<PluginFastMCP>()
+    const { plugin } = useApp<PluginFastMCP>()
+    const options = plugin.options
     const oas = useOas()
     const { getSchemas, getName, getFile } = useOperationManager()
 
@@ -25,6 +25,10 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
       schemas: getSchemas(operation, { pluginKey: [pluginTsName], type: 'type' }),
     }
 
+    const resolvedFastmcpPath = resolveImportPath('fastmcp', options, fastmcp.file.path)
+    const resolvedClientPath = resolveImportPath('../client', options, fastmcp.file.path)
+    const resolvedTypeFilePath = resolveImportPath(type.file.path, options, fastmcp.file.path)
+
     return (
       <File
         baseName={fastmcp.file.baseName}
@@ -33,9 +37,9 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
         banner={getBanner({ oas, output: options.output })}
         footer={getFooter({ oas, output: options.output })}
       >
-        <File.Import name={['FastMCPResult']} path={'fastmcp/types'} isTypeOnly />
-        <File.Import name={'fetch'} path={options.client.importPath} />
-        <File.Import name={['RequestConfig', 'ResponseErrorConfig']} path={options.client.importPath} isTypeOnly />
+        <File.Import name={['ContentResult']} path={resolvedFastmcpPath} isTypeOnly />
+        <File.Import name={'fetch'} path={resolvedClientPath} />
+        <File.Import name={['RequestConfig', 'ResponseErrorConfig']} path={resolvedClientPath} isTypeOnly />
         <File.Import
           name={[
             type.schemas.request?.name,
@@ -46,14 +50,14 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
             ...(type.schemas.statusCodes?.map((item) => item.name) || []),
           ].filter((name): name is string => Boolean(name))}
           root={fastmcp.file.path}
-          path={type.file.path}
+          path={resolvedTypeFilePath}
           isTypeOnly
         />
 
         <Client
           name={fastmcp.name}
           isConfigurable={false}
-          returnType={'Promise<FastMCPResult>'}
+          returnType={'Promise<ContentResult>'}
           baseURL={options.client.baseURL}
           operation={operation}
           typeSchemas={type.schemas}
@@ -66,21 +70,21 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
         >
           {options.client.dataReturnType === 'data' &&
             `return {
-             content: [
-               {
-                 type: 'text',
-                 text: JSON.stringify(res.data)
-               }
-             ]
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(res.data)
+                }
+              ]
             }`}
           {options.client.dataReturnType === 'full' &&
             `return {
-             content: [
-               {
-                 type: 'text',
-                 text: JSON.stringify(res)
-               }
-             ]
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(res)
+                }
+              ]
             }`}
         </Client>
       </File>
