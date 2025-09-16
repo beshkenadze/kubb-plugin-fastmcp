@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "petstore-bun": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["./test/generated/fastmcp/server.ts", "--transport", "stdio"]
+    },
+    "petstore-node": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "./test/generated/fastmcp/server.ts", "--transport", "stdio"]
+    },
+    "petstore-http": {
+      "type": "streamable-http",
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}

@@ -85,17 +85,28 @@ export const serverGenerator = createReactGenerator<PluginFastMCP>({
 
         <File baseName={jsonFile.baseName} path={jsonFile.path} meta={jsonFile.meta}>
           <File.Source name={name}>
-            {`
+            {(() => {
+              const runtimeConfig = plugin.options.runtime === 'node'
+                ? { command: 'npx', args: ['tsx', file.path] }
+                : { command: 'bun', args: [file.path] }
+
+              return `
           {
             "fastmcpServers": {
-              "${oas.api.info?.title || 'server'}": {
+              "${oas.api.info?.title || 'server'}-stdio": {
+                "type": "stdio",
+                "command": "${runtimeConfig.command}",
+                "args": [${runtimeConfig.args.map(arg => `"${arg}"`).join(', ')}, "--transport", "stdio"]
+              },
+              "${oas.api.info?.title || 'server'}-http": {
                 "type": "httpStream",
-                "command": "npx",
-                "args": ["tsx", "${file.path}"]
+                "command": "${runtimeConfig.command}",
+                "args": [${runtimeConfig.args.map(arg => `"${arg}"`).join(', ')}, "--transport", "httpStream", "--port", "8080"]
               }
             }
           }
-          `}
+          `
+            })()}
           </File.Source>
         </File>
       </>

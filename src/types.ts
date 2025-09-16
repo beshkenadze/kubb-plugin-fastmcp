@@ -15,6 +15,12 @@ export type Options = {
    */
   importStyle?: ImportStyle
   /**
+   * Runtime to use for generated server configuration
+   * 'bun' uses bun directly, 'node' uses npx tsx
+   * @default 'bun'
+   */
+  runtime?: 'bun' | 'node'
+  /**
    * Specify the export location for the files and define the behavior of the output
    * @default { path: 'fastmcp', barrelType: 'named' }
    */
@@ -56,6 +62,7 @@ export type Options = {
 
 export type ResolvedOptions = {
   importStyle: ImportStyle
+  runtime: 'bun' | 'node'
   tsconfig: import('get-tsconfig').TsConfigJsonResolved | null
   pathsMatcher: ((request: string) => string[] | undefined) | null
   output: Output<Oas>

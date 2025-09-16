@@ -27,6 +27,7 @@ export const pluginFastMCP = createPlugin<PluginFastMCP>((options) => {
     contentType,
     client,
     importStyle = 'auto',
+    runtime = 'bun',
   } = options
 
   // Initial resolved options with type assertion to match expected structure
@@ -39,6 +40,7 @@ export const pluginFastMCP = createPlugin<PluginFastMCP>((options) => {
       ...client,
     },
     importStyle,
+    runtime,
     tsconfig: null as ResolvedOptions['tsconfig'],
     pathsMatcher: null as ResolvedOptions['pathsMatcher'],
   } as ResolvedOptions

@@ -16,6 +16,7 @@ export default defineConfig({
     pluginTs(),
     pluginZod(),
     pluginFastMCP({
+      runtime: "bun",
       output: {
         path: "./fastmcp",
         barrelType: "named",

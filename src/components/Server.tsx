@@ -41,14 +41,30 @@ export const Server: FC<ServerProps> = ({ name, serverName, serverVersion, opera
       operation.zod.schemas.pathParams?.name,
       operation.zod.schemas.queryParams?.name,
       operation.zod.schemas.headerParams?.name
-    ].filter(Boolean).join(' || ')
+    ].filter(Boolean)
 
     if (hasParams) {
+      // Check if the request schema is an array-type schema that needs wrapping for FastMCP
+      const requestSchema = operation.zod.schemas.request?.name
+      const isArraySchema = requestSchema && (
+        requestSchema.includes('ArrayInput') ||
+        requestSchema.includes('ListInput')
+      )
+
+      let parametersExpression: string
+      if (isArraySchema && schemaNames.length === 1) {
+        // Wrap array schema in object for FastMCP compatibility
+        parametersExpression = `z.object({ data: ${requestSchema} })`
+      } else {
+        // Use existing logic for multiple schemas or non-array schemas
+        parametersExpression = schemaNames.join(' || ')
+      }
+
       return `
 ${name}.addTool({
   name: "${operation.tool.name}",
   description: "${operation.tool.description}",
-  parameters: ${schemaNames},
+  parameters: ${parametersExpression},
   execute: async (args) => {
     return await ${operation.fastmcp.name}(args)
   }
@@ -67,7 +83,9 @@ ${name}.addTool({
 
   return (
     <File.Source name={name} isExportable isIndexable>
-      {`export const ${name} = new FastMCP({
+      {`import { z } from "zod";
+
+export const ${name} = new FastMCP({
   name: "${serverName || 'FastMCP Server'}",
   version: "${serverVersion || '1.0.0'}",
 })
