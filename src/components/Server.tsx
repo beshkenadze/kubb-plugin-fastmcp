@@ -74,10 +74,26 @@ ${name}.addTool({
 
 ${tools}
 
-${name}.start({
-  transportType: "httpStream",
-  httpStream: { port: 8080 }
-})`}
+// Parse command-line arguments
+const args = process.argv.slice(2)
+const transportIndex = args.indexOf('--transport')
+const transportType = transportIndex > -1 ? args[transportIndex + 1] : 'stdio'
+const portIndex = args.indexOf('--port')
+const port = portIndex > -1 ? parseInt(args[portIndex + 1]) : 8080
+
+// Start server with dynamic transport
+if (transportType === 'httpStream') {
+  ${name}.start({
+    transportType: "httpStream",
+    httpStream: { port }
+  })
+} else {
+  ${name}.start({
+    transportType: "stdio"
+  })
+}
+
+console.log(\`[FastMCP info] Starting server with transport: \${transportType}\${transportType === 'httpStream' ? \` on port \${port}\` : ''}\`)`}
     </File.Source>
   )
 }
