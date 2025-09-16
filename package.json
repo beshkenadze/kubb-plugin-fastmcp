@@ -14,7 +14,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/beshkenadze/kubb-plugin-fastmcp.git"
+    "url": "git+https://github.com/beshkenadze/kubb-plugin-fastmcp.git"
   },
   "license": "MIT",
   "author": "Aleksandr Beshkenadze <beshkenadze@gmail.com>",
@@ -40,10 +40,18 @@
   "types": "./dist/index.d.cts",
   "typesVersions": {
     "*": {
-      "utils": ["./dist/utils.d.ts"],
-      "hooks": ["./dist/hooks.d.ts"],
-      "components": ["./dist/components.d.ts"],
-      "generators": ["./dist/generators.d.ts"]
+      "utils": [
+        "./dist/utils.d.ts"
+      ],
+      "hooks": [
+        "./dist/hooks.d.ts"
+      ],
+      "components": [
+        "./dist/components.d.ts"
+      ],
+      "generators": [
+        "./dist/generators.d.ts"
+      ]
     }
   },
   "files": [
