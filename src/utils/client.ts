@@ -64,4 +64,3 @@ export default async function client<TData, TError = unknown, TVariables = unkno
 
 // Named export for backwards compatibility
 export const fetch = client
-export { RequestConfig, ResponseConfig, ResponseErrorConfig }

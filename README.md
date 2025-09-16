@@ -1,10 +1,10 @@
-# @kubb/plugin-fastmcp
+# @beshkenadze/kubb-plugin-fastmcp
 
 Swagger/OpenAPI integration to create FastMCP servers and tools.
 
-[![npm version](https://img.shields.io/npm/v/@kubb/plugin-fastmcp?flat&colorA=18181B&colorB=f58517)](https://npmjs.com/package/@kubb/plugin-fastmcp)
-[![npm downloads](https://img.shields.io/npm/dm/@kubb/plugin-fastmcp?flat&colorA=18181B&colorB=f58517)](https://npmjs.com/package/@kubb/plugin-fastmcp)
-[![License](https://img.shields.io/github/license/kubb-labs/kubb.svg?flat&colorA=18181B&colorB=f58517)](https://github.com/kubb-labs/kubb/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@beshkenadze/kubb-plugin-fastmcp?flat&colorA=18181B&colorB=f58517)](https://npmjs.com/package/@beshkenadze/kubb-plugin-fastmcp)
+[![npm downloads](https://img.shields.io/npm/dm/@beshkenadze/kubb-plugin-fastmcp?flat&colorA=18181B&colorB=f58517)](https://npmjs.com/package/@beshkenadze/kubb-plugin-fastmcp)
+[![License](https://img.shields.io/github/license/beshkenadze/kubb-plugin-fastmcp.svg?flat&colorA=18181B&colorB=f58517)](https://github.com/beshkenadze/kubb-plugin-fastmcp/blob/main/LICENSE)
 
 ## Features
 
@@ -17,7 +17,7 @@ Swagger/OpenAPI integration to create FastMCP servers and tools.
 ## Installation
 
 ```bash
-bun add -D @kubb/plugin-fastmcp
+bun add -D @beshkenadze/kubb-plugin-fastmcp
 ```
 
 ## Quick Start
@@ -31,7 +31,7 @@ import { defineConfig } from '@kubb/core'
 import { pluginOas } from '@kubb/plugin-oas'
 import { pluginTs } from '@kubb/plugin-ts'
 import { pluginZod } from '@kubb/plugin-zod'
-import { pluginFastMCP } from '@kubb/plugin-fastmcp'
+import { pluginFastMCP } from '@beshkenadze/kubb-plugin-fastmcp'
 
 export default defineConfig({
   input: {
@@ -314,7 +314,7 @@ group: {
 Clone the repo and install dependencies:
 
 ```bash
-git clone https://github.com/your-org/kubb-plugin-fastmcp
+git clone https://github.com/beshkenadze/kubb-plugin-fastmcp
 cd kubb-plugin-fastmcp
 bun install
 ```

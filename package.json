@@ -1,5 +1,5 @@
 {
-  "name": "@kubb/plugin-fastmcp",
+  "name": "@beshkenadze/kubb-plugin-fastmcp",
   "version": "0.1.0",
   "description": "Kubb plugin to generate FastMCP servers and tools from OpenAPI specifications",
   "keywords": [
@@ -14,10 +14,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/kubb-plugin-fastmcp.git"
+    "url": "https://github.com/beshkenadze/kubb-plugin-fastmcp.git"
   },
   "license": "MIT",
-  "author": "Your Name",
+  "author": "Aleksandr Beshkenadze <beshkenadze@gmail.com>",
   "sideEffects": false,
   "type": "module",
   "exports": {
