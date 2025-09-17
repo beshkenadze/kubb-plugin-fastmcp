@@ -1,4 +1,3 @@
-import { Client } from '@kubb/plugin-client/components';
 import { createReactGenerator } from '@kubb/plugin-oas';
 import { useOas, useOperationManager } from '@kubb/plugin-oas/hooks';
 import { getBanner, getFooter } from '@kubb/plugin-oas/utils';
@@ -6,6 +5,7 @@ import { pluginTsName } from '@kubb/plugin-ts';
 import { File, useApp } from '@kubb/react';
 import path from 'node:path';
 import type { PluginFastMCP } from '../types';
+import { resolveImportPath } from '../utils/pathResolver';
 
 export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
   name: 'fastmcp',
@@ -25,14 +25,26 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
       schemas: getSchemas(operation, { pluginKey: [pluginTsName], type: 'type' }),
     }
 
-    // Use 'fastmcp' directly as it's an npm package
     const resolvedFastmcpPath = 'fastmcp'
 
-    // Use relative path to client file (handlers are in subdir, client is in parent)
-    const resolvedClientPath = '../client'
+    const isCustomClient = options.client.importPath &&
+                          options.client.importPath !== '@kubb/plugin-client/clients/axios'
 
-    // For types, they're in ../../types/ relative to fastmcp/[group]Handlers/
-    const typeFile = type.file.baseName // e.g., "AddPet.ts"
+    let resolvedClientPath = '../client'
+    if (isCustomClient) {
+      if (options.client.importPath.startsWith('./')) {
+        const handlerDir = path.dirname(fastmcp.file.path)
+        const outputRoot = options.output.path
+        const clientAbsolutePath = path.resolve(outputRoot, '..', options.client.importPath)
+        const relativePath = path.relative(handlerDir, clientAbsolutePath)
+        const normalizedPath = !relativePath.startsWith('.') ? './' + relativePath : relativePath
+        resolvedClientPath = resolveImportPath(normalizedPath, options, handlerDir)
+      } else {
+        resolvedClientPath = options.client.importPath
+      }
+    }
+
+    const typeFile = type.file.baseName
     const resolvedTypeFilePath = `../../types/${typeFile}`
 
     return (
@@ -45,7 +57,9 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
       >
         <File.Import name={['ContentResult']} path={resolvedFastmcpPath} isTypeOnly />
         <File.Import name={'client'} path={resolvedClientPath} />
-        <File.Import name={['RequestConfig', 'ResponseErrorConfig']} path={resolvedClientPath} isTypeOnly />
+        {!isCustomClient && (
+          <File.Import name={['RequestConfig', 'ResponseErrorConfig']} path={resolvedClientPath} isTypeOnly />
+        )}
         <File.Import
           name={[
             type.schemas.request?.name,

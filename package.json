@@ -63,6 +63,7 @@
   ],
   "scripts": {
     "build": "tsdown",
+    "mcp": "inspector-cli",
     "clean": "npx rimraf ./dist",
     "clean:test": "rm -rf test/generated",
     "generate": "bun x kubb generate",
@@ -70,12 +71,16 @@
     "lint": "bun biome lint .",
     "lint:fix": "bun biome lint --fix --unsafe .",
     "pretest:integration": "bun run clean:test",
+    "pretest:server": "bun run clean:test && bun x kubb generate --config kubb.config.ts",
+    "pretest:server-mocks": "bun run clean:test && bun x kubb generate --config kubb.config.ts",
     "release": "pnpm publish --no-git-check",
     "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
     "start": "tsdown --watch",
     "test": "bunx vitest run",
     "test:unit": "bunx vitest run test/basic.test.ts test/generators.test.tsx",
     "test:server": "bunx vitest run test/server.test.ts",
+    "test:mock": "bunx vitest run test/fastmcp-mock.test.ts --config test/vitest.config.ts",
+    "test:server-mocks": "bunx vitest run test/server-with-mocks.test.ts",
     "test:all": "bunx vitest run --reporter=verbose",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
@@ -92,15 +97,19 @@
     "get-tsconfig": "^4.10.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.0.0",
     "@kubb/config-ts": "^3.18.3",
+    "@kubb/plugin-faker": "^3.18.3",
+    "@kubb/plugin-msw": "^3.18.3",
+    "@types/node": "^24.5.1",
     "@types/react": "^19.1.13",
+    "@vitejs/plugin-react": "^5.0.3",
+    "jsdom": "^27.0.0",
+    "msw": "^2.11.2",
     "react": "^19.1.1",
     "tsdown": "^0.15.2",
     "typescript": "^5.0.0",
-    "vitest": "^3.2.4",
-    "@types/node": "^24.5.1",
-    "@vitejs/plugin-react": "^5.0.3",
-    "jsdom": "^27.0.0"
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "@kubb/react": "^3.0.0",

@@ -149,7 +149,19 @@ export const pluginFastMCP = createPlugin<PluginFastMCP>((options) => {
         mode,
       })
 
-      const files = await operationGenerator.build(...generators as any)
+      // Filter generators based on client configuration
+      const shouldGenerateClient = !resolvedOptions.client.importPath ||
+                                   resolvedOptions.client.importPath === '@kubb/plugin-client/clients/axios'
+
+      const filteredGenerators = generators.filter(generator => {
+        // Skip clientGenerator if using custom import path
+        if (generator === clientGenerator && !shouldGenerateClient) {
+          return false
+        }
+        return true
+      })
+
+      const files = await operationGenerator.build(...filteredGenerators as any)
       await this.addFile(...files)
 
       const barrelFiles = await this.fileManager.getBarrelFiles({
