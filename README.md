@@ -95,10 +95,10 @@ server.start({ transportType: "httpStream", httpStream: { port: 8080 } })
 **src/gen/fastmcp/petHandlers/addPet.ts**
 ```typescript
 import { CallToolResult } from 'fastmcp/types'
-import fetch from 'fastmcp/client'
+import { client } from 'fastmcp/client'
 
 export const addPetHandler = async (params: AddPetRequest): Promise<CallToolResult> => {
-  const res = await fetch<AddPet200Response>('/pet', {
+  const res = await client<AddPet200Response>('/pet', {
     method: 'POST',
     params,
     // ... generated client code

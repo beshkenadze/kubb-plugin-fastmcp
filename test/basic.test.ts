@@ -13,6 +13,6 @@ describe('FastMCP Plugin', () => {
   it('should accept options', () => {
     const plugin = pluginFastMCP({ output: { path: './test' } })
     expect(plugin.name).toBe('plugin-fastmcp')
-    expect(plugin.options.output).toEqual({ path: './test', barrelType: 'named' })
+    expect(plugin.options.output).toEqual({ path: './test' })
   })
 })

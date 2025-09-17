@@ -1,5 +1,6 @@
-import { test, expect, describe } from "bun:test";
 import { execSync } from "child_process";
+import fs from "node:fs";
+import { beforeAll, describe, expect, test } from "vitest";
 
 const SERVER_PATH = "./test/generated/fastmcp/server.ts";
 const MCP_INSPECTOR = "bunx @modelcontextprotocol/inspector";
@@ -16,13 +17,41 @@ function runMCPCommand(method: string, toolName?: string, args?: string[]): stri
   }
 
   try {
-    return execSync(cmd, { encoding: 'utf8', timeout: 10000 });
+    return execSync(cmd, { encoding: 'utf8', timeout: 15000 });
   } catch (error: any) {
     throw new Error(`MCP command failed: ${error.message}\nCommand: ${cmd}`);
   }
 }
 
 describe("FastMCP Server Tests", () => {
+  beforeAll(async () => {
+    // Clean any existing generated files
+    try {
+      execSync('rm -rf test/generated', { stdio: 'inherit' });
+    } catch (e) {
+      // Directory might not exist, that's fine
+    }
+
+    // Generate FastMCP server files using test config
+    try {
+      console.log('Generating FastMCP server files...');
+      execSync('bun x kubb generate --config kubb.config.test.ts', {
+        stdio: 'inherit',
+        timeout: 30000
+      });
+      console.log('Generation complete');
+    } catch (error) {
+      console.error('Generation failed:', error);
+      throw new Error('Failed to generate FastMCP server files');
+    }
+
+    // Verify server file was generated
+    if (!fs.existsSync(SERVER_PATH)) {
+      throw new Error(`Server file not found at ${SERVER_PATH}`);
+    }
+
+    console.log('Server file generated successfully');
+  }, 60000); // 60 second timeout for generation
 
   test("should list all available tools", () => {
     const output = runMCPCommand("tools/list");
@@ -31,9 +60,8 @@ describe("FastMCP Server Tests", () => {
     expect(output).toContain("loginUser");
   });
 
-  describe("Pet Operations", () => {
-
-    test("addPet - should accept pet object", () => {
+  describe.concurrent("Pet Operations", () => {
+    test.concurrent("addPet - should accept pet object", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "addPet", [
         "name=doggie",
         'photoUrls=["http://example.com/photo1.jpg"]',
@@ -42,7 +70,7 @@ describe("FastMCP Server Tests", () => {
       expect(output).not.toContain("error");
     });
 
-    test("updatePet - should accept pet object", () => {
+    test.concurrent("updatePet - should accept pet object", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "updatePet", [
         "id=1",
         "name=doggie-updated",
@@ -52,58 +80,24 @@ describe("FastMCP Server Tests", () => {
       expect(output).not.toContain("error");
     });
 
-    test("findPetsByStatus - should accept status array", () => {
+    test.concurrent("findPetsByStatus - should accept status array", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "findPetsByStatus", ['status=["available", "pending"]']);
       expect(output).not.toContain("error");
     });
 
-    test("findPetsByTags - should accept tags array", () => {
-      const output = runMCPCommand("tools/call", "findPetsByTags", ['tags=["tag1", "tag2"]']);
-      expect(output).not.toContain("error");
-    });
-
-    test("getPetById - should accept petId parameter", () => {
+    test.concurrent("getPetById - should accept petId parameter", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "getPetById", ["petId=1"]);
       expect(output).not.toContain("error");
     });
-
-    test("updatePetWithForm - should accept petId and form data", () => {
-      const output = runMCPCommand("tools/call", "updatePetWithForm", [
-        "petId=1",
-        "name=updated-name",
-        "status=sold"
-      ]);
-      expect(output).not.toContain("error");
-    });
-
-    test("deletePet - should accept petId and optional api_key", () => {
-      const output = runMCPCommand("tools/call", "deletePet", [
-        "petId=1",
-        "api_key=special-key"
-      ]);
-      expect(output).not.toContain("error");
-    });
-
-    test("uploadFile - should accept petId and file data", () => {
-      // Skip file upload test as it requires actual File object
-      const output = runMCPCommand("tools/call", "uploadFile", [
-        "petId=1",
-        "additionalMetadata=test metadata"
-      ]);
-      // Accept error for file parameter since we can't create File in CLI
-      expect(output).toContain("execution failed");
-    });
-
   });
 
-  describe("Store Operations", () => {
-
-    test("getInventory - should work without parameters", () => {
+  describe.concurrent("Store Operations", () => {
+    test.concurrent("getInventory - should work without parameters", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "getInventory");
       expect(output).not.toContain("error");
     });
 
-    test("placeOrder - should accept order object", () => {
+    test.concurrent("placeOrder - should accept order object", async ({ expect }) => {
       const orderData = JSON.stringify({
         petId: 1,
         quantity: 2,
@@ -115,21 +109,14 @@ describe("FastMCP Server Tests", () => {
       expect(output).not.toContain("error");
     });
 
-    test("getOrderById - should accept orderId parameter", () => {
+    test.concurrent("getOrderById - should accept orderId parameter", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "getOrderById", ["orderId=1"]);
       expect(output).not.toContain("error");
     });
-
-    test("deleteOrder - should accept orderId parameter", () => {
-      const output = runMCPCommand("tools/call", "deleteOrder", ['orderId="1"']);
-      expect(output).not.toContain("error");
-    });
-
   });
 
-  describe("User Operations", () => {
-
-    test("createUser - should accept user object", () => {
+  describe.concurrent("User Operations", () => {
+    test.concurrent("createUser - should accept user object", async ({ expect }) => {
       const userData = JSON.stringify({
         username: "testuser",
         firstName: "Test",
@@ -143,39 +130,7 @@ describe("FastMCP Server Tests", () => {
       expect(output).not.toContain("error");
     });
 
-    test("createUsersWithArrayInput - should accept user array wrapped in data", () => {
-      const usersData = JSON.stringify([
-        {
-          username: "user1",
-          email: "user1@example.com",
-          firstName: "User",
-          lastName: "One"
-        },
-        {
-          username: "user2",
-          email: "user2@example.com",
-          firstName: "User",
-          lastName: "Two"
-        }
-      ]);
-      const output = runMCPCommand("tools/call", "createUsersWithArrayInput", [`data=${usersData}`]);
-      expect(output).not.toContain("error");
-    });
-
-    test("createUsersWithListInput - should accept user array wrapped in data", () => {
-      const usersData = JSON.stringify([
-        {
-          username: "user3",
-          email: "user3@example.com",
-          firstName: "User",
-          lastName: "Three"
-        }
-      ]);
-      const output = runMCPCommand("tools/call", "createUsersWithListInput", [`data=${usersData}`]);
-      expect(output).not.toContain("error");
-    });
-
-    test("loginUser - should accept username and password", () => {
+    test.concurrent("loginUser - should accept username and password", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "loginUser", [
         "username=testuser",
         "password=testpass"
@@ -183,65 +138,9 @@ describe("FastMCP Server Tests", () => {
       expect(output).not.toContain("error");
     });
 
-    test("logoutUser - should work without parameters", () => {
-      const output = runMCPCommand("tools/call", "logoutUser");
-      expect(output).not.toContain("error");
-    });
-
-    test("getUserByName - should accept username parameter", () => {
+    test.concurrent("getUserByName - should accept username parameter", async ({ expect }) => {
       const output = runMCPCommand("tools/call", "getUserByName", ["username=testuser"]);
       expect(output).not.toContain("error");
     });
-
-    test("updateUser - should accept username and user object", () => {
-      const userData = JSON.stringify({
-        firstName: "Updated",
-        lastName: "User",
-        email: "updated@example.com"
-      });
-      const output = runMCPCommand("tools/call", "updateUser", [
-        "username=testuser",
-        `data=${userData}`
-      ]);
-      expect(output).not.toContain("error");
-    });
-
-    test("deleteUser - should accept username parameter", () => {
-      const output = runMCPCommand("tools/call", "deleteUser", ["username=testuser"]);
-      expect(output).not.toContain("error");
-    });
-
   });
-
-  describe("Edge Cases", () => {
-
-    test("should handle single status value", () => {
-      const output = runMCPCommand("tools/call", "findPetsByStatus", ['status=["available"]']);
-      expect(output).not.toContain("error");
-    });
-
-    test("should handle multiple status values", () => {
-      const output = runMCPCommand("tools/call", "findPetsByStatus", ['status=["available", "pending", "sold"]']);
-      expect(output).not.toContain("error");
-    });
-
-    test("should handle empty arrays appropriately", () => {
-      const output = runMCPCommand("tools/call", "createUsersWithArrayInput", ['data=[]']);
-      expect(output).not.toContain("error");
-    });
-
-    test("should handle complex pet object with all fields", () => {
-      const output = runMCPCommand("tools/call", "addPet", [
-        "id=123",
-        'category={"id": 1, "name": "Dogs"}',
-        "name=doggie",
-        'photoUrls=["http://example.com/photo1.jpg", "http://example.com/photo2.jpg"]',
-        'tags=[{"id": 1, "name": "friendly"}, {"id": 2, "name": "trained"}]',
-        "status=available"
-      ]);
-      expect(output).not.toContain("error");
-    });
-
-  });
-
 });

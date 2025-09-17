@@ -4,9 +4,9 @@ import { getBanner, getFooter } from '@kubb/plugin-oas/utils';
 import { pluginTsName } from '@kubb/plugin-ts';
 import { pluginZodName } from '@kubb/plugin-zod';
 import { File, useApp } from '@kubb/react';
+import path from 'node:path';
 import { Server } from '../components/Server';
 import type { PluginFastMCP } from '../types';
-import { resolveImportPath } from '../utils/pathResolver';
 
 export const serverGenerator = createReactGenerator<PluginFastMCP>({
   name: 'operations',
@@ -48,10 +48,23 @@ export const serverGenerator = createReactGenerator<PluginFastMCP>({
     })
 
     const imports = operationsMapped.flatMap(({ fastmcp, zod }) => {
-      const resolvedFastmcpPath = resolveImportPath(fastmcp.file.path, plugin.options, file.path)
-      const resolvedZodPath = resolveImportPath(zod.file.path, plugin.options, file.path)
+      // Build relative paths based on known structure
+      // Server is at: fastmcp/server.ts
+      // Handlers are at: fastmcp/[group]Handlers/[operation].ts
+      // Schemas are at: zod/[operation]Schema.ts
+
+      // Extract the group name from fastmcp file path (e.g., "petHandlers" from the path)
+      const fastmcpPathParts = fastmcp.file.path.split('/')
+      const handlerDir = fastmcpPathParts[fastmcpPathParts.length - 2] // e.g., "petHandlers"
+      const handlerFile = fastmcp.file.baseName // e.g., "addPet.ts"
+      const fastmcpPath = `./${handlerDir}/${handlerFile}`
+
+      // For zod schemas, they're in ../zod/ relative to fastmcp/
+      const zodFile = zod.file.baseName // e.g., "addPetSchema.ts"
+      const zodPath = `../zod/${zodFile}`
+
       return [
-        <File.Import key={fastmcp.name} name={[fastmcp.name]} root={file.path} path={resolvedFastmcpPath} />,
+        <File.Import key={fastmcp.name} name={[fastmcp.name]} path={fastmcpPath} />,
         <File.Import
           key={zod.name}
           name={[
@@ -60,13 +73,13 @@ export const serverGenerator = createReactGenerator<PluginFastMCP>({
             zod.schemas.queryParams?.name,
             zod.schemas.headerParams?.name,
           ].filter((name): name is string => Boolean(name))}
-          root={file.path}
-          path={resolvedZodPath}
+          path={zodPath}
         />,
       ]
     })
 
-    const resolvedFastmcpPath = resolveImportPath('fastmcp', plugin.options, file.path)
+    // Use 'fastmcp' directly as it's an npm package
+    const resolvedFastmcpPath = 'fastmcp'
 
     return (
       <>

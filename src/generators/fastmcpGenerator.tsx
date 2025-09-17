@@ -4,8 +4,8 @@ import { useOas, useOperationManager } from '@kubb/plugin-oas/hooks';
 import { getBanner, getFooter } from '@kubb/plugin-oas/utils';
 import { pluginTsName } from '@kubb/plugin-ts';
 import { File, useApp } from '@kubb/react';
+import path from 'node:path';
 import type { PluginFastMCP } from '../types';
-import { resolveImportPath } from '../utils/pathResolver';
 
 export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
   name: 'fastmcp',
@@ -25,9 +25,15 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
       schemas: getSchemas(operation, { pluginKey: [pluginTsName], type: 'type' }),
     }
 
-    const resolvedFastmcpPath = resolveImportPath('fastmcp', options, fastmcp.file.path)
-    const resolvedClientPath = resolveImportPath('../client', options, fastmcp.file.path)
-    const resolvedTypeFilePath = resolveImportPath(type.file.path, options, fastmcp.file.path)
+    // Use 'fastmcp' directly as it's an npm package
+    const resolvedFastmcpPath = 'fastmcp'
+
+    // Use relative path to client file (handlers are in subdir, client is in parent)
+    const resolvedClientPath = '../client'
+
+    // For types, they're in ../../types/ relative to fastmcp/[group]Handlers/
+    const typeFile = type.file.baseName // e.g., "AddPet.ts"
+    const resolvedTypeFilePath = `../../types/${typeFile}`
 
     return (
       <File
@@ -38,7 +44,7 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
         footer={getFooter({ oas, output: options.output })}
       >
         <File.Import name={['ContentResult']} path={resolvedFastmcpPath} isTypeOnly />
-        <File.Import name={'fetch'} path={resolvedClientPath} />
+        <File.Import name={'client'} path={resolvedClientPath} />
         <File.Import name={['RequestConfig', 'ResponseErrorConfig']} path={resolvedClientPath} isTypeOnly />
         <File.Import
           name={[
@@ -49,44 +55,45 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
             type.schemas.headerParams?.name,
             ...(type.schemas.statusCodes?.map((item) => item.name) || []),
           ].filter((name): name is string => Boolean(name))}
-          root={fastmcp.file.path}
           path={resolvedTypeFilePath}
           isTypeOnly
         />
 
-        <Client
-          name={fastmcp.name}
-          isConfigurable={false}
-          returnType={'Promise<ContentResult>'}
-          baseURL={options.client.baseURL}
-          operation={operation}
-          typeSchemas={type.schemas}
-          zodSchemas={undefined}
-          dataReturnType={options.client.dataReturnType}
-          paramsType={'object'}
-          paramsCasing={'camelcase'}
-          pathParamsType={'object'}
-          parser={'client'}
-        >
-          {options.client.dataReturnType === 'data' &&
-            `return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(res.data)
-                }
-              ]
-            }`}
-          {options.client.dataReturnType === 'full' &&
-            `return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(res)
-                }
-              ]
-            }`}
-        </Client>
+        <File.Source name={fastmcp.name} isExportable isIndexable>
+          {(() => {
+            const params = type.schemas.request ? '{ data }' :
+                          type.schemas.pathParams && type.schemas.queryParams ? '{ ...params }' :
+                          type.schemas.pathParams ? '{ ...pathParams }' :
+                          type.schemas.queryParams ? '{ ...queryParams }' : '{}'
+
+            const configParts = [
+              `method: "${operation.method.toUpperCase()}"`,
+              `url: \`${operation.path.replace(/\{([^}]+)\}/g, '${$1}')}\``,
+              options.client.baseURL ? `baseURL: "${options.client.baseURL}"` : '',
+              type.schemas.request ? 'data: requestData' : '',
+            ].filter(Boolean)
+
+            const returnContent = options.client.dataReturnType === 'data'
+              ? 'JSON.stringify(res.data)'
+              : 'JSON.stringify(res)'
+
+            return `export async function ${fastmcp.name}(${params}: { ${
+              type.schemas.request ? `data: ${type.schemas.request.name}` : ''
+            } }): Promise<ContentResult> {
+  ${type.schemas.request ? 'const requestData = data' : ''}
+
+  const res = await client<${type.schemas.response?.name || 'unknown'}, ${type.schemas.errors?.[0]?.name || 'unknown'}, ${type.schemas.request?.name || 'unknown'}>({ ${configParts.join(', ')} })
+  return {
+    content: [
+      {
+        type: 'text',
+        text: ${returnContent}
+      }
+    ]
+  }
+}`
+          })()}
+        </File.Source>
       </File>
     )
   },

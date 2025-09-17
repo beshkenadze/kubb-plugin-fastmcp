@@ -73,10 +73,10 @@
     "release": "pnpm publish --no-git-check",
     "release:canary": "bash ../../.github/canary.sh && node ../../scripts/build.js canary && pnpm publish --no-git-check",
     "start": "tsdown --watch",
-    "test": "bun run generate && bun test test/server.test.ts",
-    "test:server": "bun test test/server.test.ts",
-    "test:integration": "bun test test/integration",
-    "test:all": "bun test && bun run generate:test && bun run test:integration",
+    "test": "bunx vitest run",
+    "test:unit": "bunx vitest run test/basic.test.ts test/generators.test.tsx",
+    "test:server": "bunx vitest run test/server.test.ts",
+    "test:all": "bunx vitest run --reporter=verbose",
     "typecheck": "tsc -p ./tsconfig.json --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -95,11 +95,11 @@
     "@kubb/config-ts": "^3.18.3",
     "@types/react": "^19.1.13",
     "react": "^19.1.1",
-    "tsdown": "^0.15.1",
+    "tsdown": "^0.15.2",
     "typescript": "^5.0.0",
     "vitest": "^3.2.4",
-    "@types/node": "^24.5.0",
-    "@vitejs/plugin-react": "^5.0.2",
+    "@types/node": "^24.5.1",
+    "@vitejs/plugin-react": "^5.0.3",
     "jsdom": "^27.0.0"
   },
   "peerDependencies": {

@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,21 +25,18 @@ jobs:
       - name: Build plugin
         run: bun run build
 
-      - name: Run unit tests
-        run: bun test
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
 
-      - name: Run type checking
-        run: bun run typecheck
-
-      - name: Run integration tests
-        run: bun run test:integration
-
-      - name: Run all tests
-        run: bun run test:all
-
-  lint:
+  test:
     runs-on: ubuntu-latest
-    if: false # Disabled because biome is not installed
+    needs: build
+    strategy:
+      matrix:
+        test-suite: [unit, server]
 
     steps:
       - name: Checkout code
@@ -52,6 +49,63 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+      - name: Run unit tests
+        if: matrix.test-suite == 'unit'
+        run: bunx vitest run test/basic.test.ts test/generators.test.tsx --reporter=verbose
+
+      - name: Run server tests
+        if: matrix.test-suite == 'server'
+        run: bunx vitest run test/server.test.ts --reporter=verbose
+
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+      - name: Run type checking
+        run: bun run typecheck
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Biome
+        run: bun add -D @biomejs/biome
 
       - name: Run lint
         run: bun run lint

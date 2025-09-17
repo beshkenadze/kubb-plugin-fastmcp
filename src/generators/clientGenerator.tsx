@@ -54,7 +54,7 @@ export type ResponseErrorConfig<TError = unknown> = {
 const axiosInstance = axios.create()
 
 // Client function
-export default async function client<TData, TError = unknown, TVariables = unknown>(
+export async function client<TData, TError = unknown, TVariables = unknown>(
   config: RequestConfig<TVariables>
 ): Promise<ResponseConfig<TData>> {
   try {
@@ -81,9 +81,8 @@ export default async function client<TData, TError = unknown, TVariables = unkno
   }
 }
 
-// Named export for backwards compatibility
-export const fetch = client
-export { RequestConfig, ResponseConfig, ResponseErrorConfig }`}
+// Default export for flexibility
+export default client`}
         </File.Source>
       </File>
     )
