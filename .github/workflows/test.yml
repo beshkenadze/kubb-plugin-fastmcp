@@ -60,6 +60,10 @@ jobs:
         if: matrix.test-suite == 'unit'
         run: bunx vitest run test/basic.test.ts test/generators.test.tsx --reporter=verbose
 
+      - name: Generate files for server tests
+        if: matrix.test-suite == 'server'
+        run: bun run clean:test && bun x kubb generate --config kubb.config.ts
+
       - name: Run server tests
         if: matrix.test-suite == 'server'
         run: bunx vitest run test/server.test.ts --reporter=verbose
