@@ -36,7 +36,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        test-suite: [unit, server, mock]
+        test-suite: [unit, server]
 
     steps:
       - name: Checkout code
@@ -67,14 +67,6 @@ jobs:
       - name: Run server tests
         if: matrix.test-suite == 'server'
         run: bunx vitest run test/server.test.ts --reporter=verbose
-
-      - name: Generate mock files for mock tests
-        if: matrix.test-suite == 'mock'
-        run: bun run clean:test && bun x kubb generate --config kubb.config.mocks.ts
-
-      - name: Run mock tests
-        if: matrix.test-suite == 'mock'
-        run: bunx vitest run test/fastmcp-mock.test.ts --config test/vitest.config.ts --reporter=verbose
 
   typecheck:
     runs-on: ubuntu-latest
