@@ -1,6 +1,6 @@
 import { createReactGenerator } from '@kubb/plugin-oas';
 import { useOas, useOperationManager } from '@kubb/plugin-oas/hooks';
-import { getBanner, getFooter } from '@kubb/plugin-oas/utils';
+import { getBanner, getFooter, getPathParams } from '@kubb/plugin-oas/utils';
 import { pluginTsName } from '@kubb/plugin-ts';
 import { File, useApp } from '@kubb/react';
 import path from 'node:path';
@@ -75,25 +75,47 @@ export const fastmcpGenerator = createReactGenerator<PluginFastMCP>({
 
         <File.Source name={fastmcp.name} isExportable isIndexable>
           {(() => {
-            const params = type.schemas.request ? '{ data }' :
-                          type.schemas.pathParams && type.schemas.queryParams ? '{ ...params }' :
-                          type.schemas.pathParams ? '{ ...pathParams }' :
-                          type.schemas.queryParams ? '{ ...queryParams }' : '{}'
+            // Build parameter destructuring and types based on schemas
+            const paramParts = []
+            const typeParts = []
+
+            if (type.schemas.request) {
+              paramParts.push('data')
+              typeParts.push(`data: ${type.schemas.request.name}`)
+            }
+
+            if (type.schemas.pathParams) {
+              // Use the official Kubb utility for extracting path parameters
+              const pathParams = getPathParams(type.schemas.pathParams, { typed: true, casing: 'camelcase' })
+              const pathParamNames = Object.keys(pathParams)
+              paramParts.push(...pathParamNames)
+              // Use the existing path params type for proper typing
+              pathParamNames.forEach(paramName => {
+                typeParts.push(`${paramName}: ${type.schemas.pathParams!.name}['${paramName}']`)
+              })
+            }
+
+            if (type.schemas.queryParams) {
+              paramParts.push('queryParams')
+              typeParts.push(`queryParams: ${type.schemas.queryParams.name}`)
+            }
+
+            const params = paramParts.length > 0 ? `{ ${paramParts.join(', ')} }` : '{}'
+            const paramTypes = typeParts.join('; ')
 
             const configParts = [
               `method: "${operation.method.toUpperCase()}"`,
               `url: \`${operation.path.replace(/\{([^}]+)\}/g, '${$1}')}\``,
               options.client.baseURL ? `baseURL: "${options.client.baseURL}"` : '',
               type.schemas.request ? 'data: requestData' : '',
+              type.schemas.queryParams ? 'params: queryParams' : '',
             ].filter(Boolean)
 
             const returnContent = options.client.dataReturnType === 'data'
               ? 'JSON.stringify(res.data)'
               : 'JSON.stringify(res)'
 
-            return `export async function ${fastmcp.name}(${params}: { ${
-              type.schemas.request ? `data: ${type.schemas.request.name}` : ''
-            } }): Promise<ContentResult> {
+            return `export async function ${fastmcp.name}(${params}: { ${paramTypes} }): Promise<ContentResult> {
   ${type.schemas.request ? 'const requestData = data' : ''}
 
   const res = await client<${type.schemas.response?.name || 'unknown'}, ${type.schemas.errors?.[0]?.name || 'unknown'}, ${type.schemas.request?.name || 'unknown'}>({ ${configParts.join(', ')} })

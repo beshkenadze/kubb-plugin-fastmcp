@@ -62,7 +62,7 @@ jobs:
 
       - name: Generate files for server tests
         if: matrix.test-suite == 'server'
-        run: bun run clean:test && bun x kubb generate --config kubb.config.ts
+        run: bun run clean:test && bun x kubb generate --config kubb.config.mocks.ts
 
       - name: Run server tests
         if: matrix.test-suite == 'server'
@@ -70,7 +70,7 @@ jobs:
 
       - name: Generate mock files for mock tests
         if: matrix.test-suite == 'mock'
-        run: bun run clean:test && bun x kubb generate --config kubb.config.ts
+        run: bun run clean:test && bun x kubb generate --config kubb.config.mocks.ts
 
       - name: Run mock tests
         if: matrix.test-suite == 'mock'

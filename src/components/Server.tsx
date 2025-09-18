@@ -44,19 +44,61 @@ export const Server: FC<ServerProps> = ({ name, serverName, serverVersion, opera
     ].filter(Boolean)
 
     if (hasParams) {
-      // Check if the request schema is an array-type schema that needs wrapping for FastMCP
       const requestSchema = operation.zod.schemas.request?.name
+      const pathParamsSchema = operation.zod.schemas.pathParams?.name
+      const queryParamsSchema = operation.zod.schemas.queryParams?.name
+      const headerParamsSchema = operation.zod.schemas.headerParams?.name
+
+      // Check if the request schema is an array-type schema that needs wrapping for FastMCP
       const isArraySchema = requestSchema && (
         requestSchema.includes('ArrayInput') ||
         requestSchema.includes('ListInput')
       )
 
       let parametersExpression: string
-      if (isArraySchema && schemaNames.length === 1) {
-        // Wrap array schema in object for FastMCP compatibility
-        parametersExpression = `z.object({ data: ${requestSchema} })`
+
+      // Build schema based on what parameters exist
+      const schemaParts: string[] = []
+
+      if (requestSchema) {
+        if (isArraySchema) {
+          // Array schemas always need data wrapper
+          schemaParts.push(`data: ${requestSchema}`)
+        } else {
+          // Regular request schemas need data wrapper to match handler signature
+          schemaParts.push(`data: ${requestSchema}`)
+        }
+      }
+
+      if (pathParamsSchema) {
+        // Path params are destructured individually, so spread the schema shape
+        schemaParts.push(`...${pathParamsSchema}.shape`)
+      }
+
+      if (queryParamsSchema) {
+        // Query params are passed as object
+        schemaParts.push(`queryParams: ${queryParamsSchema}`)
+      }
+
+      if (headerParamsSchema) {
+        // Header params are passed as object
+        schemaParts.push(`headerParams: ${headerParamsSchema}`)
+      }
+
+      if (schemaParts.length > 1) {
+        // Multiple parameter types - combine into single object
+        parametersExpression = `z.object({ ${schemaParts.join(', ')} })`
+      } else if (schemaParts.length === 1) {
+        // Single parameter type
+        if (requestSchema && !pathParamsSchema && !queryParamsSchema && !headerParamsSchema) {
+          // Only request data - wrap in object
+          parametersExpression = `z.object({ ${schemaParts[0]} })`
+        } else {
+          // Only path/query/header params - use schema directly
+          parametersExpression = schemaNames[0]
+        }
       } else {
-        // Use existing logic for multiple schemas or non-array schemas
+        // Fallback - shouldn't happen but handle gracefully
         parametersExpression = schemaNames.join(' || ')
       }
 
