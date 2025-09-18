@@ -39,3 +39,5 @@ src/gen/*
 # Test generated files
 test/generated/
 test/temp-gen/
+test/temp-path-params/
+test/mocks-generated/
