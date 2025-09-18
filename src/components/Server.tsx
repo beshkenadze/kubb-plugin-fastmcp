@@ -95,7 +95,7 @@ export const Server: FC<ServerProps> = ({ name, serverName, serverVersion, opera
           parametersExpression = `z.object({ ${schemaParts[0]} })`
         } else {
           // Only path/query/header params - use schema directly
-          parametersExpression = schemaNames[0]
+          parametersExpression = schemaNames[0] || 'z.any()'
         }
       } else {
         // Fallback - shouldn't happen but handle gracefully
